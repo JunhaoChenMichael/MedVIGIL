@@ -30,7 +30,7 @@ MODEL_FILES = {
     "Claude Opus 4.7": "claude-opus-4-7__mcq.jsonl",
     "Gemini 3.1 Flash-Lite": "gemini-3.1-flash-lite-preview__mcq.jsonl",
     "Gemini 3 Flash": "gemini-3-flash-preview__mcq.jsonl",
-    "<MODEL>": "<MODEL>__mcq.jsonl",
+    "GPT-5.5": "gpt-5.5__mcq.jsonl",
     "GPT-5.4": "gpt-5.4__mcq.jsonl",
     "Claude Sonnet 4.6": "claude-sonnet-4-6__mcq.jsonl",
     "HuatuoGPT-V 7B": "huatuogpt-vision-7b__mcq.jsonl",

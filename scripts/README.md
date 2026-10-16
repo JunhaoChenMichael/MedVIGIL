@@ -1,62 +1,38 @@
-# `scripts/` — MedVIGIL pipeline
+# `scripts/`
 
-Each script is independently runnable from the project root with
-`python3 scripts/<name>.py [--help]`. The pipeline in `bench_freeze.py`
-runs them in the canonical order.
+Every script runs from the repository root as `python scripts/<name>.py [--help]` and reads the dataset from `data/medvigil_v1/` (download it from <https://huggingface.co/datasets/jhq0709/MedVIGIL>). Results go to `results/`.
 
-## Active pipeline (build the benchmark)
-
-| # | Script | Role | Inputs | Outputs |
-|---|--------|------|--------|---------|
-| 1 | `bench_init_manifest.py`         | Layer A: copy human annotations + images into `data/medvigil_v1/` | `data/annotations/master_300.csv` | `manifest.csv`, `probes.csv` (initial), `images/` |
-| 2 | `bench_generate_layers_bcd.py`   | <MODEL> mega-prompt: Layer B grounding + Layer C1 new text probes + Layer D V-CF anchor | `manifest.csv` + images | `raw_clinician/<case>.json` |
-| 3 | `bench_make_image_perturbations.py` | Layer C2 programmatic image perturbations (ROI-masked / ROI-only / LR-flip) | `raw_clinician/*.json` (for bbox) + images | `images_perturbed/`, `_image_probes.csv` |
-| 4 | `bench_consolidate_probes.py`    | Merge initial + Layer C1 + Layer C2 → unified probe table | `_image_probes.csv` + `raw_clinician/*` | `probes_open.csv`, `grounding.csv`, `_vcf_anchors.csv` |
-| 5 | `bench_build_triplets.py`        | Layer D triplet assembly + 3 invariant checks | `probes_open.csv` + `_vcf_anchors.csv` | `triplets.csv` |
-| 6 | `bench_build_splits.py`          | Layer E stratified splits + Layer F text-only subset | `manifest.csv` + `probes_open.csv` | `splits/*.json` |
-| 7 | `bench_generate_mcq.py`          | Wrap each text probe in 5-option MCQ via <MODEL> (async, concurrency=8, resumable) | `probes_open.csv` + `grounding.csv` + `raw_clinician/*` | `mcq_provenance/<probe>.json` |
-| 8 | `bench_consolidate_mcq.py`       | Merge MCQ payloads + image-variant inheritance + lr_flip letter logic | `mcq_provenance/*` + `probes_open.csv` | `probes_mcq.csv` |
-| 9 | `bench_fix_lr_unmatched.py`      | Regenerate `__orig` MCQ for laterality-dependent cases whose flipped gold didn't match | `probes_mcq.csv` + `raw_clinician/*` | overwrites `mcq_provenance/<case>__orig.json` |
-| 10 | `bench_consolidate_mcq.py`      | (re-run after step 9) | as above | `probes_mcq.csv` |
-| 11 | `bench_validate_full.py`        | 14-check end-to-end integrity report | all outputs | `validation_report.md` |
-
-`bench_freeze.py` orchestrates all 11 steps idempotently. Each step is
-resumable independently.
-
-## QA / inspection (no LLM cost)
+## Running models
 
 | Script | Purpose |
-|--------|---------|
-| `bench_validate_full.py` | Run anytime to get pass/warn/fail on 14 integrity gates |
-| `bench_visualize_roi.py` | Render 4-panel diagnostic PNGs (`qa_review/<case>.png`) so a doctor can spot-check 30-50 ROI bboxes in <30 minutes |
+|---|---|
+| `bench_run_baseline.py` | One API model (OpenAI-compatible, Anthropic, Gemini, Together AI, DeepSeek text-only) on `probes_mcq.csv` or `probes_open.csv`. Async, resumable, retries with backoff on rate limits. `--no-image` runs the matched no-image control. |
+| `bench_run_huatuo.py` | HuatuoGPT-Vision-7B locally, with `--shard i/n` for multi-GPU runs. Needs the official repository in `HuatuoGPT-Vision/` and weights in `checkpoints/huatuogpt-vision-7b/`. |
+| `bench_run_llava_med.py` | LLaVA-Med v1.5 (Mistral-7B) locally through `inference.py`. |
+| `bench_clean_errors.py` | Removes failed rows from a results file so the runner re-queries them. |
 
-## Downstream evaluation
+API keys come from the environment or a `.env` file at the repository root (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, `TOGETHER_API_KEY`, `DEEPSEEK_API_KEY`). A probe whose image is not on disk is skipped, never sent without its image.
+
+## Scoring
 
 | Script | Purpose |
-|--------|---------|
-| `bench_judge_open.py` | LLM-judge for **open-ended** model outputs. Takes `<model>.jsonl` of model responses → emits per-row verdicts (`correct` / `incorrect` / `refused_appropriately` / `silent_failure` / `hedged`). Uses fast heuristics first, <MODEL> LLM-judge for ambiguous cases. |
+|---|---|
+| `bench_aggregate.py` | Reads `results/baselines/<model>__mcq.jsonl` and writes per-model metrics by probe kind, risk tier and source, plus LaTeX tables. MCQ scoring is exact letter match against `correct_letter`; no judge model. |
+| `bench_judge_open.py` | Scores the open-ended variant: regex rules for clear refusals and gold matches, an LLM judge (gpt-5.5) for ambiguous rows. |
 
-Note: MCQ-format scoring needs no LLM-judge — score by string-matching
-the model's letter against `correct_letter` in `probes_mcq.csv`.
+## Data checks and image variants
 
-## Environment
+| Script | Purpose |
+|---|---|
+| `bench_validate_full.py` | Integrity checks on the downloaded release: schema, images, grounding boxes, probe counts, triplet invariants, MCQ option rules. |
+| `bench_make_image_perturbations.py` | Renders ROI-masked, ROI-only and left–right-flipped images from `grounding.csv`. Reproduces the released `images_perturbed/` pixel for pixel; credentialed users run it for the chest-radiograph cases. |
+| `bench_visualize_roi.py` | Four-panel ROI overlays (original, box, masked, ROI-only) for inspection. |
 
-All scripts that call OpenAI auto-load `.env` via `api_models._load_dotenv`.
-Required: `OPENAI_API_KEY` set in `.env` at the project root.
+## Ablations
 
-Models used:
-- `<MODEL>` — for all dataset construction (Layer B / C1 / D / MCQ wrapping)
-  and for the LLM-judge fallback in `bench_judge_open.py`.
-
-## Resumability
-
-Every <MODEL> generation script writes one JSON per row (per case or per
-probe). Re-running the script skips rows whose JSON already has
-`status: "ok"`. To force regeneration of a single case/probe, delete the
-corresponding file under `raw_clinician/` or `mcq_provenance/`.
-
-## `legacy/`
-
-Pre-MedVIGIL scripts (Phase-1 annotation pack builder, audit, etc.)
-are archived under `scripts/legacy/`. They are kept for reproducibility
-of the upstream data preparation but are not part of the v1 pipeline.
+| Script | Purpose |
+|---|---|
+| `bench_blur_sweep_make.py` | Gaussian-blurred copies of the original-probe images at sigma 0, 2, 4, 8, 16, 32 and 64, and one probe file per level. |
+| `bench_blur_sweep_run.py`, `run_blur_sweep_one_model.sh` | One API model across all blur levels, plus the no-image level (`inf`). |
+| `bench_blur_sweep_run_huatuo.py` | The blur sweep for HuatuoGPT-Vision-7B. |
+| `bench_visual_token_ablation.py` | Progressive ROI masking (0, 33, 67 and 100% of the box) on a stratified case sample. |

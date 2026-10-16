@@ -70,7 +70,7 @@ PALETTE = {
 
 
 MODEL_META = [
-    ("<MODEL>", "OpenAI", "5.5"),
+    ("gpt-5.5", "OpenAI", "5.5"),
     ("gpt-5.4", "OpenAI", "5.4"),
     ("gpt-4o", "OpenAI", "4o"),
     ("gpt-5.4-mini", "OpenAI", "5.4-mini"),

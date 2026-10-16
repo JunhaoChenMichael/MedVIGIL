@@ -4,15 +4,15 @@ Run anytime to get a full quality report on the dataset state. Does NOT
 modify anything; reports only.
 
 Checks:
-  L1  Manifest schema + 300 cases
-  L2  All images present and openable
-  L3  Layer B (grounding) coverage and bbox sanity
+  L1  Manifest schema; 240 cases (public release) or 300 (with the
+      credentialed chest-radiograph arm, see CXR_ACCESS.md on Hugging Face)
+  L2  All images present and openable (chest radiographs not on disk are
+      reported, not failed)
+  L3  Grounding coverage and bbox sanity
   L4  Probe count consistency between probes_open and manifest
   L5  Triplet invariants (anchor != T-CF != V-CF; gold equalities/inequalities)
-  L6  Splits sum to 300 and partition cleanly
   L7  MCQ coverage (text probes have MCQ; image variants resolved)
   L8  MCQ choice quality (no empty / no duplicate / correct_letter rules)
-  L9  Provenance trail: every <MODEL>-derived row has raw_clinician or mcq_provenance
 
 Output:
   prints summary to stdout
@@ -92,32 +92,37 @@ def main():
         extra = set(manifest[0].keys()) - expected_manifest_cols
         R.add("L1 manifest schema", "FAIL",
               f"missing {missing}, extra {extra}")
-    elif len(manifest) != 300:
-        R.add("L1 manifest count==300", "FAIL", f"got {len(manifest)}")
+    elif len(manifest) not in (240, 300):
+        R.add("L1 manifest count", "FAIL", f"got {len(manifest)}; expected 240 (public) or 300 (full)")
     else:
-        R.add("L1 manifest 300×9-cols", "OK")
+        R.add(f"L1 manifest {len(manifest)}×9-cols", "OK")
 
     # ---- L2: images openable ----
     from PIL import Image
     bad_images = []
+    credentialed = 0
     for r in manifest:
         p = BENCH / "images" / r["image_file"]
+        if not p.exists() and r["source_dataset"] == "cxr":
+            credentialed += 1      # MIMIC-CXR / CheXpert image: supplied by a credentialed user
+            continue
         try:
             Image.open(p).verify()
         except Exception as e:
             bad_images.append((r["case_id"], str(e)[:50]))
     if bad_images:
-        R.add("L2 all 300 images valid", "FAIL",
+        R.add("L2 images valid", "FAIL",
               "\n".join(f"{cid}: {e}" for cid, e in bad_images[:5]))
     else:
-        R.add("L2 all 300 images valid", "OK")
+        R.add("L2 images valid", "OK",
+              f"{len(manifest) - credentialed} present" + (f"; {credentialed} chest radiographs not on disk" if credentialed else ""))
 
     # ---- L3: grounding coverage + bbox sanity ----
     grounding = load_csv(BENCH / "grounding.csv")
     gd = {r["case_id"]: r for r in grounding}
     n_with_grounding = sum(1 for r in manifest if r["case_id"] in gd)
     if n_with_grounding < len(manifest):
-        R.add("L3 grounding 300/300", "FAIL",
+        R.add("L3 grounding coverage", "FAIL",
               f"only {n_with_grounding}/{len(manifest)} cases have grounding")
     else:
         # bbox sanity
@@ -135,7 +140,7 @@ def main():
             R.add("L3 grounding bbox sanity", "WARN",
                   f"{len(bad_bbox)} bboxes invalid (kept as-is, scorer will skip ROI variants)")
         else:
-            R.add("L3 grounding 300/300 + bbox", "OK")
+            R.add(f"L3 grounding {n_with_grounding}/{len(manifest)} + bbox", "OK")
 
     # ---- L4: probes_open ----
     probes_open = load_csv(BENCH / "probes_open.csv")
@@ -143,8 +148,8 @@ def main():
     detail = "  ".join(f"{k}={v}" for k, v in sorted(cnt_by_kind.items()))
     if len(probes_open) < 1500:
         R.add("L4 probes_open ≥1500 rows", "FAIL", f"got {len(probes_open)}: {detail}")
-    elif "original" not in cnt_by_kind or cnt_by_kind["original"] != 300:
-        R.add("L4 probes_open 300 originals", "FAIL", detail)
+    elif cnt_by_kind.get("original") != len(manifest):
+        R.add("L4 probes_open one original per case", "FAIL", detail)
     else:
         R.add(f"L4 probes_open ({len(probes_open)} rows)", "OK", detail)
 
@@ -164,29 +169,6 @@ def main():
     else:
         R.add(f"L5 triplets ({len(triplets)}) invariants", "OK",
               f"all {len(triplets)} triplets satisfy anchor!=tcf, gold==tcf, gold!=vcf")
-
-    # ---- L6: splits ----
-    splits_dir = BENCH / "splits"
-    splits = {}
-    if splits_dir.exists():
-        for sp in splits_dir.glob("*.json"):
-            splits[sp.stem] = json.loads(sp.read_text())
-    for s_name in ("by_tier", "by_source", "by_modality", "by_rarity"):
-        if s_name not in splits:
-            R.add(f"L6 split {s_name}", "FAIL", "missing"); continue
-        s = splits[s_name]
-        union = set()
-        dup = 0
-        for k, v in s.items():
-            for cid in v:
-                if cid in union: dup += 1
-                union.add(cid)
-        if len(union) != 300:
-            R.add(f"L6 split {s_name}", "WARN", f"covers {len(union)}/300 cases, {dup} dups")
-        else:
-            R.add(f"L6 split {s_name}", "OK", f"covers all 300, partition")
-    if "text_only_subset" in splits:
-        R.add(f"L6 Layer F subset", "OK", f"{len(splits['text_only_subset'])} cases")
 
     # ---- L7: MCQ coverage ----
     mcq = load_csv(BENCH / "probes_mcq.csv")
@@ -228,14 +210,6 @@ def main():
                   "  ".join(f"{k}={v}" for k, v in bad.items()))
         else:
             R.add("L8 MCQ choice quality gates", "OK")
-
-    # ---- L9: provenance trail ----
-    raw_clinician = list((BENCH / "raw_clinician").glob("*.json"))
-    mcq_provenance = list((BENCH / "mcq_provenance").glob("*.json"))
-    R.add("L9 raw_clinician files (Layer B/C1/D)", "OK" if len(raw_clinician) >= 300 else "WARN",
-          f"{len(raw_clinician)} files (expected ≥300)")
-    R.add("L9 mcq_provenance files (Layer C MCQ)", "OK" if len(mcq_provenance) >= 1500 else "WARN",
-          f"{len(mcq_provenance)} files (expected ≥1500 once MCQ done)")
 
     R.print()
     R.write(REPORT)

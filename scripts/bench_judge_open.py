@@ -19,9 +19,9 @@ Pipeline (per row):
     GOLD_MATCH_RX checks substring containment of gold or any
     answer_variant against the model's answer (case-insensitive).
     For yes/no probes, an exact yes/no extractor.
-  Step 2 — LLM-judge fallback (<MODEL>):
+  Step 2 — LLM-judge fallback (gpt-5.5):
     For ambiguous rows (no clear refusal, no clear gold match) call
-    <MODEL> with a short structured prompt. Returns verdict + confidence.
+    gpt-5.5 with a short structured prompt. Returns verdict + confidence.
 
 Input JSONL schema (one row per probe response):
   {
@@ -67,7 +67,7 @@ _load_dotenv()
 BENCH = ROOT / "data/medvigil_v1"
 PROBES_OPEN = BENCH / "probes_open.csv"
 
-JUDGE_MODEL = "<MODEL>"
+JUDGE_MODEL = "gpt-5.5"
 JUDGE_MAX_TOKENS = 600
 
 

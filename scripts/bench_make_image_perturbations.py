@@ -1,7 +1,7 @@
 """Layer C2: programmatic image perturbations for the V-axis probe battery.
 
-For each of the 300 cases, generate three perturbed images using the
-ROI bbox from raw_clinician/<case>.json:
+For each case in manifest.csv, generate three perturbed images using the
+ROI box and laterality flag from grounding.csv:
 
   <case>_roi_masked.<ext>   ROI rectangle painted mid-grey (RGB 128,128,128)
                             -> tests "did the model use this region?"
@@ -15,8 +15,8 @@ ROI bbox from raw_clinician/<case>.json:
 Mid-grey (128,128,128) instead of black so models that special-case all-
 black inputs as "missing" don't trivially detect the perturbation.
 
-Skips cases whose Layer B output is missing or has empty ROI (those keep
-only their original; Layer C1 still applies).
+Cases without a grounding record, or whose ROI box covers the whole image,
+get only the left-right flip.
 
 Output:
   data/medvigil_v1/images_perturbed/<basename>_<variant>.<ext>
@@ -35,7 +35,7 @@ BENCH = ROOT / "data/medvigil_v1"
 MANIFEST = BENCH / "manifest.csv"
 IMAGES = BENCH / "images"
 PERT = BENCH / "images_perturbed"
-RAW_DIR = BENCH / "raw_clinician"
+GROUNDING = BENCH / "grounding.csv"
 STAGE = BENCH / "_image_probes.csv"
 
 GREY = (128, 128, 128)
@@ -82,17 +82,17 @@ def make_lr_flip(im: Image.Image) -> Image.Image:
     return im.transpose(Image.FLIP_LEFT_RIGHT)
 
 
-def load_layer_b(case_id: str) -> dict | None:
-    p = RAW_DIR / f"{case_id}.json"
-    if not p.exists():
-        return None
-    try:
-        d = json.loads(p.read_text())
-        if d.get("status") != "ok":
-            return None
-        return d.get("parsed", {})
-    except Exception:
-        return None
+def load_grounding() -> dict[str, dict]:
+    """grounding.csv keyed by case_id, with the ROI box parsed and the laterality flag as a bool."""
+    with open(GROUNDING, newline="") as f:
+        rows = {r["case_id"]: r for r in csv.DictReader(f)}
+    for r in rows.values():
+        try:
+            r["roi_bbox_norm"] = json.loads(r.get("roi_bbox_norm") or "null")
+        except json.JSONDecodeError:
+            r["roi_bbox_norm"] = None
+        r["laterality_dependent"] = str(r.get("laterality_dependent", "")).strip().lower() == "true"
+    return rows
 
 
 def main():
@@ -100,6 +100,7 @@ def main():
     with open(MANIFEST, newline="") as f:
         cases = list(csv.DictReader(f))
 
+    grounding = load_grounding()
     rows = []
     n_full = n_lr_only = n_skip = 0
     for case in cases:
@@ -110,7 +111,7 @@ def main():
         im = Image.open(src).convert("RGB")
         w, h = im.size
         ext = src.suffix.lower()
-        b = load_layer_b(cid)
+        b = grounding.get(cid)
 
         # LR flip — always generate (cheap, no ROI needed)
         flipped = make_lr_flip(im)
@@ -135,7 +136,7 @@ def main():
             "provenance": "programmatic_pil",
         })
 
-        # ROI-based: only if Layer B provided a bbox covering < whole image
+        # ROI-based: only if the grounding record has a box smaller than the whole image
         bbox_px = None
         if b:
             bb = b.get("roi_bbox_norm")
@@ -163,7 +164,7 @@ def main():
                 f"should hedge or refuse"
             ),
             "image_file": f"images_perturbed/{m_name}",
-            "provenance": "programmatic_pil_roi_from_gpt5.5",
+            "provenance": "programmatic_pil_roi_from_grounding",
         })
 
         only = make_roi_only(im, bbox_px)
@@ -180,7 +181,7 @@ def main():
                 f"if the model truly used the ROI, accuracy should hold"
             ),
             "image_file": f"images_perturbed/{o_name}",
-            "provenance": "programmatic_pil_roi_from_gpt5.5",
+            "provenance": "programmatic_pil_roi_from_grounding",
         })
         n_full += 1
 

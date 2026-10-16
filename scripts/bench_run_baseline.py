@@ -7,7 +7,7 @@ Async + semaphore for concurrency, resumable (per-probe-id skip),
 per-call latency tracking, retry-with-backoff on rate-limit errors.
 
 Run:
-    python3 scripts/bench_run_baseline.py --model <MODEL> --format mcq
+    python3 scripts/bench_run_baseline.py --model gpt-5.5 --format mcq
     python3 scripts/bench_run_baseline.py --model gpt-4o --format open --concurrency 8
     python3 scripts/bench_run_baseline.py --model gpt-5.4-nano --format mcq --limit 10  # smoke
 """
@@ -36,7 +36,7 @@ PROBES_MCQ = BENCH / "probes_mcq.csv"
 PROBES_OPEN = BENCH / "probes_open.csv"
 RESULTS = ROOT / "results/baselines"
 
-REASONING_MODELS = {"<MODEL>"}      # use larger token budget for reasoning models
+REASONING_MODELS = {"gpt-5.5"}      # use larger token budget for reasoning models
 DEFAULT_TOKENS = 600
 REASONING_TOKENS = 1200
 
@@ -332,6 +332,13 @@ async def main_async(args):
         print(f"[init] resume: {len(done)} already in {out_path.name}", flush=True)
 
     todo = [p for p in probes if p["probe_id"] not in done]
+    # A probe whose image is not on disk (a credentialed chest radiograph that has not
+    # been supplied, see CXR_ACCESS.md on Hugging Face) is skipped, never sent without it.
+    missing = {p["probe_id"] for p in todo
+               if (img := resolve_image_path(p)) is not None and not img.exists()}
+    if missing and not args.no_image:
+        todo = [p for p in todo if p["probe_id"] not in missing]
+        print(f"[init] skipping {len(missing)} probes whose image is not on disk", flush=True)
     if args.limit:
         todo = todo[: args.limit]
     print(f"[init] todo: {len(todo)} (skipping {len(probes) - len(todo) - (0 if args.limit else 0)} done; "
@@ -386,7 +393,7 @@ async def main_async(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True,
-                    help="OpenAI model id (e.g. <MODEL>, gpt-4o-mini)")
+                    help="OpenAI model id (e.g. gpt-5.5, gpt-4o-mini)")
     ap.add_argument("--format", choices=["mcq", "open"], default="mcq")
     ap.add_argument("--concurrency", type=int, default=8)
     ap.add_argument("--limit", type=int, default=None)

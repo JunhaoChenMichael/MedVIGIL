@@ -42,7 +42,7 @@ plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42
 
 MODEL_META = [
-    ("<MODEL>",                   "OpenAI",   "<MODEL>"),
+    ("gpt-5.5",                   "OpenAI",   "GPT-5.5"),
     ("gpt-5.4",                   "OpenAI",   "GPT-5.4"),
     ("gpt-4o",                    "OpenAI",   "GPT-4o"),
     ("gpt-5.4-mini",              "OpenAI",   "GPT-5.4-mini"),

@@ -127,6 +127,13 @@ def main():
 
     done = load_done(out_path)
     todo = [p for p in todo if p["probe_id"] not in done]
+    # A probe whose image is not on disk (a credentialed chest radiograph that has not
+    # been supplied, see CXR_ACCESS.md on Hugging Face) is skipped, never sent without it.
+    missing = {p["probe_id"] for p in todo
+               if (img := resolve_image_path(p)) is not None and not img.exists()}
+    if missing:
+        todo = [p for p in todo if p["probe_id"] not in missing]
+        print(f"[init] skipping {len(missing)} probes whose image is not on disk", flush=True)
     print(f"[init] resume: {len(done)} already in file, {len(todo)} todo for this shard", flush=True)
 
     n_ok = n_err = n_correct = 0
