@@ -98,31 +98,14 @@ Seven correctness-conditioned audit metrics summarise into three components (**C
 - **Two distinct failure regimes.** *Vision-anchored but unsafe* models (e.g. Gemini 3 Flash, VGR +41.1 pp / SFR 37.2%) use the ROI when present but fail to refuse when it is removed; *prior-driven and unsafe* models (e.g. GPT-5.4-nano, −27.1 pp / 51.7%) do not use ROI evidence consistently.
 - **MCS reorders the leaderboard by bottleneck.** Claude Opus 4.7 leads at 69.2 because all three components are high; GPT-4o falls to 44.1 because Safety is its bottleneck; Qwen3.5-9B is lowest at 31.0 with Safety below 25.
 
-<p align="center">
-  <img src="assets/capability_safety.png" width="100%" alt="Capability vs Safety and Safety vs Grounding projections">
-</p>
-<p align="center"><em>MCS components in two pairwise projections. <b>Left:</b> Capability vs. Safety, marker size ∝ Grounding. <b>Right:</b> Safety vs. Grounding, marker size ∝ Capability. Dashed curves are MCS isolines; the green band is the empirical Pareto frontier.</em></p>
+## Visual information decay
 
-## Visual evidence analyses
-
-**Visual information decay.** An isotropic Gaussian blur sweep (σ ∈ {0, 2, 4, 8, 16, 32, 64} px plus no image) locates the language-takeover point L\*, beyond which answers are driven by the language prior rather than the image.
+An isotropic Gaussian blur sweep (σ ∈ {0, 2, 4, 8, 16, 32, 64} px plus no image) locates the language-takeover point L\*, beyond which answers are driven by the language prior rather than the image.
 
 <p align="center">
   <img src="assets/visual_decay.png" width="100%" alt="Visual information decay under Gaussian blur">
 </p>
 <p align="center"><em>Solid: MCQ accuracy on image-required cases as blur σ grows; dashed: text-answerable control; ×: no image. The shaded region right of L* is the language-prior-dominated regime.</em></p>
-
-<p align="center">
-  <img src="assets/visual_decay_per_tier.png" width="100%" alt="Per-risk-tier accuracy as a function of blur">
-</p>
-<p align="center"><em>Per-risk-tier accuracy as a function of blur σ, decomposing the curves above into L1–L5. × markers are the no-image values.</em></p>
-
-**Visual-token ablation.** Progressively masking the doctor-defined ROI shows how refusal and answer switching respond as the evidence disappears.
-
-<p align="center">
-  <img src="assets/visual_token_ablation.png" width="100%" alt="Visual-token ROI-mask ablation on case MVB-0031">
-</p>
-<p align="center"><em><b>Left:</b> the four-step ROI-mask sequence on case MVB-0031 (blue: doctor-defined ROI; red: masked fraction). <b>Right:</b> refusal rate and letter-switch rate vs. step 0 for three flagship API models (pilot, n = 80 stratified cases; shaded bands are Wilson 95% CIs).</em></p>
 
 ## Quick start
 
