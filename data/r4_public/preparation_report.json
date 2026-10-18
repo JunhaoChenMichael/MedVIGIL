@@ -1,0 +1,30 @@
+{
+  "reference_scope": "public",
+  "n_source_answers": 2556,
+  "n_source_key_rows": 2556,
+  "n_selected_answers": 2002,
+  "n_excluded_answers": 554,
+  "n_reference_cases": 240,
+  "n_public_probes_validated": 2002,
+  "n_public_cases_validated": 240,
+  "seq_and_image_bijection": true,
+  "exact_public_text_choice_and_source_image_validation": true,
+  "separate_full_gold_validated": false,
+  "private_reference_text_origin": null,
+  "risk_tier_case_counts": {
+    "L3": 62,
+    "L5": 33,
+    "L4": 43,
+    "L2": 31,
+    "L1": 71
+  },
+  "limitation": "Image associations are declared by the supplied key; no pixel comparison is performed.",
+  "n_nonpublic_reference_probes": 0,
+  "gold_provenance_limit": null,
+  "input_sha256": {
+    "answers": "5b762305c46400954ec042a8c6faf459fa7fe6b339992e9854aeb0b61c6aa847",
+    "seq_key": "da05eef2f19844b8f01b24901f7507a8d9e38d5fa602c63a8360d73288387577",
+    "public_probes": "037626541be69f54b6c4b366f0aa204d51b4434d42ee080f3c5b8027cb039adc",
+    "public_manifest": "2177942ceb0b2566e3f8a798e947dc47a6435aa37bad7ea3a1b84e526cb881b8"
+  }
+}

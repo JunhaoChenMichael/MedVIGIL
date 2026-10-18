@@ -1,0 +1,23 @@
+{
+  "analysis/clinician_baseline_mcs.py": "2847b0a4e7ee253d1a40a8380bea0f7e66c168ed2093c605f82b54d4011cf2aa",
+  "analysis/prepare_r4_inputs.py": "04763c9b5bc5ce5f8ed090fa2a8f67307f9f5a6be3fdefc7e0ee107ed4765177",
+  "analysis/README_r4.txt": "5f3c4b9e2fe4ff7f1c969bbb5168dbd7a5d3c838c56101a26728bb0137ecef0a",
+  "analysis/score_r4.py": "1a25f973b2277b3f5163c95eb4762e6154cf6cce1d810435f0967576cb6760d0",
+  "analysis/test_prepare_r4_inputs.py": "bc4ccc1f8b9be89fb94ca8958a1f6c134bf2cef2c2b03772f9cf2144c4255c40",
+  "analysis/test_score_r4.py": "f7745246a13b596ef5a01a7541406756692575e1941e3b4ca8d3db064cab3d39",
+  "data/clinician_baseline.csv": "6a6e6c99706fbb319eb32217350af135bbfd6a375e6067e9c3237ca087e4b488",
+  "data/r4_public/answers.csv": "78c1b70da8d78848697fce158c6eadaee156795f74a38182a1afa033865878f1",
+  "data/r4_public/manifest.csv": "49e3b809173a499c4a1041827d8644c1f96f79518889ff15fa7a8b050c4819de",
+  "data/r4_public/preparation_report.json": "2ddc1764cf77b0cf14a6f6cd9f3afdc8fa599cf7887b52b2aaeae04b3c1d5f3d",
+  "data/r4_public/probes_mcq.csv": "e258b5954a38dad3e2927b253a7b56bed71c8f58d681d85fa5494bd8e03d6ca4",
+  "data/r4_public/README.md": "52f2eb46c9423e7e631a85d4e0eb361b21a671b59f4860e94e4c01d056bde562",
+  "data/r4_public/release_validation.json": "ba4fcb880db7084d7e1c8ca3cd37b97d4f88a2ee555901334654d2ab5d3c52a0",
+  "data/r4_public/score/identified_public_probes.csv": "66e41367426ed2d13f9a6d6fbb2150104652086c8d191095512dc095208cce2f",
+  "data/r4_public/score/public_alignment.csv": "7d0057097384a71fc0db5c34c2088cea60b4db772724d72b9d6d7f657e882675",
+  "data/r4_public/score/public_family_tier.csv": "915730a8ca3f4a1320299e5b55c62cfe338e2a97e10a261b62ac7294e71a3f5a",
+  "data/r4_public/score/summary.json": "046160600d86e9fe2c2e95557808a24acefe5550063fe9ce7b4dca0a857f5b41",
+  "data/r4_public/score/supported_public_family_tier.csv": "915730a8ca3f4a1320299e5b55c62cfe338e2a97e10a261b62ac7294e71a3f5a",
+  "data/r4_public/score/supported_public_tier.json": "46061a4b2d8923ebddd018c795df949ca9979eb5ba3c160a3baca0c124283d3f",
+  "data/r4_public/score/unmatched_seq.csv": "d160bb03483e7f056543cc83fba77cd4f1c338847b5ff9e349af51b205664587",
+  "data/r4_public/seq_to_probe.csv": "e6d9f88da870481b5fb4371a706ef21a9d3e471f9cfa368b62e75bb0d74352b4"
+}

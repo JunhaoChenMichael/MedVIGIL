@@ -1,0 +1,300 @@
+{
+  "scope": "public reference population; all answers identified",
+  "reference_scope": "public",
+  "rounding": "All calculations use exact fractions; one-decimal display uses ROUND_HALF_UP",
+  "input_sha256": {
+    "answers": "78c1b70da8d78848697fce158c6eadaee156795f74a38182a1afa033865878f1",
+    "probes": "e258b5954a38dad3e2927b253a7b56bed71c8f58d681d85fa5494bd8e03d6ca4",
+    "manifest": "49e3b809173a499c4a1041827d8644c1f96f79518889ff15fa7a8b050c4819de",
+    "seq_map": "e6d9f88da870481b5fb4371a706ef21a9d3e471f9cfa368b62e75bb0d74352b4"
+  },
+  "n_answer_rows": 2002,
+  "seq_is_complete_1_to_n": false,
+  "data_origin_values": {
+    "actual_clinician": 2002
+  },
+  "answer_counts": {
+    "A": 1284,
+    "E": 579,
+    "B": 95,
+    "C": 19,
+    "D": 25
+  },
+  "n_reference_probes": 2002,
+  "n_reference_cases": 240,
+  "n_public_probes": 2002,
+  "n_public_cases": 240,
+  "n_matched_answer_rows": 2002,
+  "n_unmatched_rows": 0,
+  "n_rows_with_ambiguous_text_mapping": 0,
+  "n_individually_identified_rows": 2002,
+  "n_exact_signature_groups": 1455,
+  "multiplicities_equal": true,
+  "identity_resolved": true,
+  "metrics": {
+    "Overall": {
+      "n": 2002,
+      "n_correct": 1837,
+      "pct": 91.75824175824175,
+      "pct_exact": "8350/91",
+      "pct_1dp": "91.8",
+      "lower_pct": 91.75824175824175,
+      "upper_pct": 91.75824175824175
+    },
+    "Original": {
+      "n": 240,
+      "n_correct": 229,
+      "pct": 95.41666666666667,
+      "pct_exact": "1145/12",
+      "pct_1dp": "95.4",
+      "lower_pct": 95.41666666666667,
+      "upper_pct": 95.41666666666667
+    },
+    "PR": {
+      "n": 240,
+      "n_correct": 220,
+      "pct": 91.66666666666667,
+      "pct_exact": "275/3",
+      "pct_1dp": "91.7",
+      "lower_pct": 91.66666666666667,
+      "upper_pct": 91.66666666666667
+    },
+    "NEG": {
+      "n": 170,
+      "n_correct": 151,
+      "pct": 88.82352941176471,
+      "pct_exact": "1510/17",
+      "pct_1dp": "88.8",
+      "lower_pct": 88.82352941176471,
+      "upper_pct": 88.82352941176471
+    },
+    "SDR": {
+      "n": 106,
+      "n_correct": 94,
+      "pct": 88.67924528301887,
+      "pct_exact": "4700/53",
+      "pct_1dp": "88.7",
+      "lower_pct": 88.67924528301887,
+      "upper_pct": 88.67924528301887
+    },
+    "LPA": {
+      "n": 226,
+      "n_correct": 210,
+      "pct": 92.92035398230088,
+      "pct_exact": "10500/113",
+      "pct_1dp": "92.9",
+      "lower_pct": 92.92035398230088,
+      "upper_pct": 92.92035398230088
+    },
+    "ROI_only": {
+      "n": 150,
+      "n_correct": 136,
+      "pct": 90.66666666666667,
+      "pct_exact": "272/3",
+      "pct_1dp": "90.7",
+      "lower_pct": 90.66666666666667,
+      "upper_pct": 90.66666666666667
+    },
+    "ROI_masked": {
+      "n": 150,
+      "n_correct": 129,
+      "pct": 86.0,
+      "pct_exact": "86/1",
+      "pct_1dp": "86.0",
+      "lower_pct": 86.0,
+      "upper_pct": 86.0
+    },
+    "SFR_pct": 6.25,
+    "SFR_pct_exact": "25/4",
+    "SFR_pct_1dp": "6.3",
+    "SFR_by_tier": {
+      "L1": {
+        "n": 142,
+        "n_silent_failures": 0,
+        "sfr_pct": 0.0,
+        "sfr_pct_exact": "0/1",
+        "sfr_pct_1dp": "0.0"
+      },
+      "L2": {
+        "n": 62,
+        "n_silent_failures": 3,
+        "sfr_pct": 4.838709677419355,
+        "sfr_pct_exact": "150/31",
+        "sfr_pct_1dp": "4.8"
+      },
+      "L3": {
+        "n": 124,
+        "n_silent_failures": 10,
+        "sfr_pct": 8.064516129032258,
+        "sfr_pct_exact": "250/31",
+        "sfr_pct_1dp": "8.1"
+      },
+      "L4": {
+        "n": 86,
+        "n_silent_failures": 9,
+        "sfr_pct": 10.465116279069768,
+        "sfr_pct_exact": "450/43",
+        "sfr_pct_1dp": "10.5"
+      },
+      "L5": {
+        "n": 66,
+        "n_silent_failures": 8,
+        "sfr_pct": 12.121212121212121,
+        "sfr_pct_exact": "400/33",
+        "sfr_pct_1dp": "12.1"
+      }
+    },
+    "SFR_w_pct": 9.640328742472699,
+    "SFR_w_pct_exact": "8057300/835791",
+    "SFR_w_pct_1dp": "9.6",
+    "VGR_pp": 4.666666666666667,
+    "MCS": 82.74438055128155,
+    "Cap": 91.14652700702922,
+    "Safe": 90.3596712575273,
+    "Ground": 70.33333333333333,
+    "MCS_exact": "12562929915423800/151828194636587",
+    "MCS_1dp": "82.7",
+    "composites_by_tier": {
+      "L1": {
+        "Cap": {
+          "value": 97.21362229102168,
+          "exact": "31400/323",
+          "one_decimal": "97.2"
+        },
+        "Safe": {
+          "value": 100.0,
+          "exact": "100/1",
+          "one_decimal": "100.0"
+        },
+        "Ground": {
+          "value": 75.0,
+          "exact": "75/1",
+          "one_decimal": "75.0"
+        },
+        "VGR_pp": {
+          "value": 0.0,
+          "exact": "0/1",
+          "one_decimal": "0.0"
+        },
+        "MCS": {
+          "value": 89.23271234606884,
+          "exact": "282600/3167",
+          "one_decimal": "89.2"
+        }
+      },
+      "L2": {
+        "Cap": {
+          "value": 93.22458455522971,
+          "exact": "381475/4092",
+          "one_decimal": "93.2"
+        },
+        "Safe": {
+          "value": 95.16129032258064,
+          "exact": "2950/31",
+          "one_decimal": "95.2"
+        },
+        "Ground": {
+          "value": 72.91666666666667,
+          "exact": "875/12",
+          "one_decimal": "72.9"
+        },
+        "VGR_pp": {
+          "value": 0.0,
+          "exact": "0/1",
+          "one_decimal": "0.0"
+        },
+        "MCS": {
+          "value": 85.8380286305876,
+          "exact": "4726475250/55062719",
+          "one_decimal": "85.8"
+        }
+      },
+      "L3": {
+        "Cap": {
+          "value": 90.21333227395519,
+          "exact": "1135425/12586",
+          "one_decimal": "90.2"
+        },
+        "Safe": {
+          "value": 91.93548387096774,
+          "exact": "2850/31",
+          "one_decimal": "91.9"
+        },
+        "Ground": {
+          "value": 71.0,
+          "exact": "71/1",
+          "one_decimal": "71.0"
+        },
+        "VGR_pp": {
+          "value": 4.0,
+          "exact": "4/1",
+          "one_decimal": "4.0"
+        },
+        "MCS": {
+          "value": 83.22574995098218,
+          "exact": "3063376650/36808039",
+          "one_decimal": "83.2"
+        }
+      },
+      "L4": {
+        "Cap": {
+          "value": 87.66132123690264,
+          "exact": "1372075/15652",
+          "one_decimal": "87.7"
+        },
+        "Safe": {
+          "value": 89.53488372093024,
+          "exact": "3850/43",
+          "one_decimal": "89.5"
+        },
+        "Ground": {
+          "value": 69.18604651162791,
+          "exact": "2975/43",
+          "one_decimal": "69.2"
+        },
+        "VGR_pp": {
+          "value": 6.976744186046512,
+          "exact": "300/43",
+          "one_decimal": "7.0"
+        },
+        "MCS": {
+          "value": 81.01505959517102,
+          "exact": "10776277050/133015727",
+          "one_decimal": "81.0"
+        }
+      },
+      "L5": {
+        "Cap": {
+          "value": 86.4853896103896,
+          "exact": "53275/616",
+          "one_decimal": "86.5"
+        },
+        "Safe": {
+          "value": 87.87878787878788,
+          "exact": "2900/33",
+          "one_decimal": "87.9"
+        },
+        "Ground": {
+          "value": 68.33333333333333,
+          "exact": "205/3",
+          "one_decimal": "68.3"
+        },
+        "VGR_pp": {
+          "value": 6.666666666666667,
+          "exact": "20/3",
+          "one_decimal": "6.7"
+        },
+        "MCS": {
+          "value": 79.83797504411095,
+          "exact": "760127700/9520879",
+          "one_decimal": "79.8"
+        }
+      }
+    }
+  },
+  "limitations": [
+    "The actual_clinician field is a supplied label; it does not verify R4 identity, qualifications, independence, blinding or protocol.",
+    "PR uses exact T-CF correctness, not the legacy anchor-answer agreement.",
+    "A mapping CSV is an external identity record. Question/options validation cannot independently establish that its image provenance is correct."
+  ]
+}

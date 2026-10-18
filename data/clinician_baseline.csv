@@ -1,0 +1,55 @@
+probe_kind,risk_tier,n_probes,n_correct,acc_or_sfr_pct,note
+original,L1,71,71,100.0,
+original,L2,31,30,96.8,
+original,L3,118,113,95.8,
+original,L4,43,39,90.7,
+original,L5,37,33,89.2,
+original,ALL,300,286,95.3,Supplied mapped full-benchmark answer/key/gold aggregate
+halluc_trap,L1,142,142,0.0,n_correct counts safe E responses; percentage is SFR
+halluc_trap,L2,62,59,4.8,n_correct counts safe E responses; percentage is SFR
+halluc_trap,L3,236,222,5.9,n_correct counts safe E responses; percentage is SFR
+halluc_trap,L4,86,77,10.5,n_correct counts safe E responses; percentage is SFR
+halluc_trap,L5,74,65,12.2,n_correct counts safe E responses; percentage is SFR
+halluc_trap,ALL,600,565,5.8,n_correct counts safe E responses; percentage is SFR
+tcf,L1,71,71,100.0,
+tcf,L2,31,29,93.5,
+tcf,L3,118,111,94.1,
+tcf,L4,43,37,86.0,
+tcf,L5,37,30,81.1,
+tcf,ALL,300,278,92.7,Supplied mapped full-benchmark answer/key/gold aggregate
+negation,L1,19,18,94.7,
+negation,L2,22,20,90.9,
+negation,L3,109,101,92.7,
+negation,L4,39,33,84.6,
+negation,L5,36,32,88.9,
+negation,ALL,225,204,90.7,Supplied mapped full-benchmark answer/key/gold aggregate
+specificity_drop,L1,17,16,94.1,
+specificity_drop,L2,12,11,91.7,
+specificity_drop,L3,82,76,92.7,
+specificity_drop,L4,28,25,89.3,
+specificity_drop,L5,25,22,88.0,
+specificity_drop,ALL,164,150,91.5,Supplied mapped full-benchmark answer/key/gold aggregate
+knowledge_only,L1,63,62,98.4,
+knowledge_only,L2,29,27,93.1,
+knowledge_only,L3,113,107,94.7,
+knowledge_only,L4,42,38,90.5,
+knowledge_only,L5,36,31,86.1,
+knowledge_only,ALL,283,265,93.6,Supplied mapped full-benchmark answer/key/gold aggregate
+roi_only,L1,3,3,100.0,
+roi_only,L2,24,23,95.8,
+roi_only,L3,89,82,92.1,
+roi_only,L4,43,38,88.4,
+roi_only,L5,33,29,87.9,
+roi_only,ALL,192,175,91.1,Supplied mapped full-benchmark answer/key/gold aggregate
+roi_masked,L1,3,3,100.0,
+roi_masked,L2,24,23,95.8,
+roi_masked,L3,89,79,88.8,
+roi_masked,L4,43,35,81.4,
+roi_masked,L5,33,26,78.8,
+roi_masked,ALL,192,166,86.5,Supplied mapped full-benchmark answer/key/gold aggregate
+lr_flip,L1,71,68,95.8,
+lr_flip,L2,31,28,90.3,
+lr_flip,L3,118,109,92.4,
+lr_flip,L4,43,37,86.0,
+lr_flip,L5,37,30,81.1,
+lr_flip,ALL,300,272,90.7,Supplied mapped full-benchmark answer/key/gold aggregate

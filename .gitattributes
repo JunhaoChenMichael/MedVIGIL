@@ -1,0 +1,4 @@
+# Preserve the published R4 artifact bytes and their recorded SHA-256 digests.
+data/r4_public/** -text whitespace=cr-at-eol
+data/clinician_baseline.csv -text whitespace=cr-at-eol
+analysis/clinician_baseline_mcs.py -text whitespace=cr-at-eol

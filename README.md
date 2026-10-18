@@ -15,7 +15,7 @@
 [![NeurIPS 2026](https://img.shields.io/badge/NeurIPS%202026-Evaluations%20%26%20Datasets%20Track-8A2BE2)](#citation)
 [![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-jhq0709%2FMedVIGIL-FFD21E)](https://huggingface.co/datasets/jhq0709/MedVIGIL)
 [![Code License](https://img.shields.io/badge/Code-MIT-2EA44F)](LICENSE)
-[![Data License](https://img.shields.io/badge/Data-CC%20BY--NC--SA%204.0-lightgrey)](https://huggingface.co/datasets/jhq0709/MedVIGIL)
+[![Annotation License](https://img.shields.io/badge/Annotations-CC%20BY%204.0-lightgrey)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](requirements.txt)
 
 </div>
@@ -57,6 +57,22 @@ This repository holds the evaluation harness that scores a vision-language model
 **How the data were built.** Two board-certified radiologists (R1, R2) independently annotate each case's risk tier, answerability, gold answer, five-option candidate set, ROI box and laterality flag. GPT-5.5 drafts the text perturbations, false-premise traps and counterfactual conditions, and R1 and R2 review and edit every draft. A senior radiologist (P3) adjudicates every disagreement and finalises every released field. The Hugging Face datasheet and `PIPELINE.md` give the full protocol.
 
 **Public release.** 240 cases (VQA-RAD 120, SLAKE 60, ROCO 60), 2,002 MCQ probes and 180 triplets. The full benchmark adds 60 chest-radiograph cases from MIMIC-CXR and CheXpert (554 probes), which are available only to credentialed users (`CXR_ACCESS.md` on Hugging Face). Every script runs on the public release; probes whose image is not on disk are skipped, never sent without their image.
+
+## R4 clinician reference answers
+
+The [public R4 answer release](data/r4_public/README.md) contains the original responses for all **2,002 public probes from 240 cases**, the reading-key mapping, public reference metadata and per-probe correctness. Reproduce it without model calls or third-party packages:
+
+```sh
+python analysis/score_r4.py --answers data/r4_public/answers.csv --probes data/r4_public/probes_mcq.csv --manifest data/r4_public/manifest.csv --seq-map data/r4_public/seq_to_probe.csv --require-complete --reference-scope public --output-dir r4_public_recomputed
+```
+
+This public subset scores **MCS 82.7**. The paper's **300-case full-benchmark MCS 83.3** is reproduced from the separately released [exact family/tier counts](data/clinician_baseline.csv):
+
+```sh
+python analysis/clinician_baseline_mcs.py
+```
+
+The 60 credentialed CXR cases (554 probes) are excluded from the public answer sheet, mapping and per-probe reference data. The full aggregate contains counts only. See [R4 scoring instructions](analysis/README_r4.txt) for scope and provenance.
 
 ## Leaderboard
 
@@ -202,4 +218,6 @@ If you find MedVIGIL useful, please cite:
 
 ## License
 
-MIT for the code in this repository. The dataset annotations are CC BY-NC-SA 4.0; source images and texts keep their upstream licences (VQA-RAD CC0, SLAKE CC BY-SA 4.0, ROCO CC BY-NC-SA 4.0). See the dataset card for details.
+The code is released under MIT. MedVIGIL-authored annotations and benchmark metadata are released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), as specified in [LICENSE](LICENSE).
+
+Source images, questions, answers and captions retain their original upstream terms: VQA-RAD (CC0), SLAKE (research-use), ROCO (MIT-style metadata over PMC-OA images, with the images retaining their original per-image licences), and chest-radiograph collections (dataset-specific terms). MedVIGIL does not relicense source imagery or other upstream content. The 60 MIMIC-CXR / CheXpert cases remain withheld from the public release; access is described in the dataset's `CXR_ACCESS.md`.

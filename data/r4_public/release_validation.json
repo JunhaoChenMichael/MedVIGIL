@@ -1,0 +1,31 @@
+{
+  "source_files_match_prior_sha256": true,
+  "reprepared_public_files_match_prior_records": true,
+  "reprepared_full_files_match_prior_records": true,
+  "full_aggregate_cells_checked": 54,
+  "full_aggregate_matches_direct_original_answer_key_gold_join": true,
+  "public_answer_rows": 2002,
+  "public_cases": 240,
+  "excluded_answer_rows": 554,
+  "excluded_cases": 60,
+  "excluded_case_population": "entire credentialed CXR subset",
+  "public_reference": "https://huggingface.co/datasets/jhq0709/MedVIGIL/tree/5373ecdc8e20c467f1933b314b3a3164d2cba6d5",
+  "source_sha256": {
+    "answers": "5b762305c46400954ec042a8c6faf459fa7fe6b339992e9854aeb0b61c6aa847",
+    "seq_key": "da05eef2f19844b8f01b24901f7507a8d9e38d5fa602c63a8360d73288387577",
+    "public_probes": "037626541be69f54b6c4b366f0aa204d51b4434d42ee080f3c5b8027cb039adc",
+    "public_manifest": "2177942ceb0b2566e3f8a798e947dc47a6435aa37bad7ea3a1b84e526cb881b8",
+    "gold": "eda58917fc2d5ad5218d8ebca88fb87b1f454bd359eaae4e4980c8af146021e8"
+  },
+  "limitations": [
+    "The actual_clinician source label does not independently establish physician identity, credentials, blinding or protocol.",
+    "Image-to-probe associations are provided by the author key; no pixel-level comparison has been performed.",
+    "Nonpublic gold and risk tiers are supplied local records and have no separate public reference for independent verification.",
+    "The release contains only public-subset per-probe records; full-benchmark data are aggregate counts only."
+  ],
+  "synthetic_contract_tests_passed": 16,
+  "fresh_public_direct_count_and_composite_checks_passed": 84,
+  "public_recomputed_summary_equals_prior_result": true,
+  "latex_r4_headline_family_tier_and_composite_values_checked": 107,
+  "release_scan_no_restricted_case_records_or_absolute_paths": true
+}
