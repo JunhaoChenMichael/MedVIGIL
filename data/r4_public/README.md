@@ -36,6 +36,10 @@ original full-benchmark order is preserved after exclusion of nonpublic rows.
 Run from the repository root with Python 3.10 or later; only the standard
 library is required.
 
+Use a new output-directory name for each run. The scorer requires an explicit
+reference scope and publishes a complete validated report set; it does not
+overwrite an existing result directory.
+
 ```sh
 python analysis/score_r4.py --answers data/r4_public/answers.csv --probes data/r4_public/probes_mcq.csv --manifest data/r4_public/manifest.csv --seq-map data/r4_public/seq_to_probe.csv --require-complete --reference-scope public --output-dir r4_public_recomputed
 ```
@@ -81,5 +85,9 @@ risk tiers have no separate public reference for independent verification.
 No reader names, credentials, contact details or local absolute paths are
 included in this release.
 
-The repository [LICENSE](../../LICENSE) is the authoritative license statement.
-Upstream data rights and access restrictions continue to apply.
+The MedVIGIL-authored R4 response letters, reading-key mappings, aggregate counts
+and scoring metadata in this release are licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), following the canonical
+[evaluation-repository LICENSE](https://github.com/hq0709/MedVIGIL/blob/main/LICENSE).
+Third-party source questions, answers, options, captions and imagery retain
+their upstream terms and access restrictions; they are not relicensed here.

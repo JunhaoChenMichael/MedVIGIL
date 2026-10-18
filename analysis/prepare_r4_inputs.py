@@ -13,7 +13,9 @@ import argparse
 import csv
 import hashlib
 import json
+import tempfile
 from collections import Counter
+from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 
 FIELDS = ("question", "choice_A", "choice_B", "choice_C", "choice_D", "choice_E")
@@ -22,6 +24,35 @@ SUFFIX_KIND = {"orig": "original", "tcf": "tcf", "negation": "negation", "specif
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+def reject_formula_cells(rows, label):
+    for line, row in enumerate(rows, 2):
+        require(None not in row and all(isinstance(value, str) for value in row.values()), f"Malformed CSV row in {label}, line {line}")
+        for column, value in row.items():
+            require(not value.lstrip().startswith(("=", "+", "-", "@")), f"Formula-prefixed CSV cell in {label}, line {line}, column {column}; input is rejected without changing its text")
+
+@contextmanager
+def new_output_directory(output):
+    """Publish one complete input set; existing destinations are never reused."""
+    output = Path(output)
+    message = "Output directory already exists; choose a new output path"
+    require(not output.exists() and not output.is_symlink(), message)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    lock = output.parent / f".{output.name}.lock"
+    try:
+        lock.mkdir()
+    except FileExistsError as exc:
+        raise ValueError("Output publication already in progress; choose a new output path") from exc
+    try:
+        require(not output.exists() and not output.is_symlink(), message)
+        with tempfile.TemporaryDirectory(prefix=f".{output.name}-", dir=output.parent) as temp:
+            staged = Path(temp) / "inputs"
+            staged.mkdir()
+            yield staged
+            require(not output.exists() and not output.is_symlink(), message)
+            staged.rename(output)
+    finally:
+        lock.rmdir()
 
 def read(path, columns):
     with Path(path).open(encoding="utf-8-sig", newline="") as handle:
@@ -49,6 +80,9 @@ def safe_image_path(path):
     return not path or ("\\" not in path and not PurePosixPath(path).is_absolute() and ":" not in path and ".." not in PurePosixPath(path).parts)
 
 def prepare(answers, key, public_probes, public_manifest, scope, gold=None):
+    require(scope in ("public", "full"), "Scope must explicitly be public or full")
+    for label, rows in (("answers", answers), ("key", key), ("public probes", public_probes), ("public manifest", public_manifest), ("gold", gold or [])):
+        reject_formula_cells(rows, label)
     normalize_seqs(answers, "answer")
     normalize_seqs(key, "mapping")
     by_seq = {r["seq"]: r for r in answers}
@@ -118,6 +152,7 @@ def main():
     parser.add_argument("--gold", type=Path, help="Separate author gold table; required for full scope")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
+    require(not args.output_dir.exists() and not args.output_dir.is_symlink(), "Output directory already exists; choose a new output path")
     answers = read(args.answers, ("seq", "image", "answer", *FIELDS))
     key = read(args.seq_key, ("seq", "probe_id", "source_image", "r4_image"))
     probes = read(args.public_probes, ("probe_id", "case_id", "probe_kind", "correct_letter", "image_file", *FIELDS))
@@ -129,12 +164,12 @@ def main():
         paths["gold"] = args.gold
     report["input_sha256"] = {k: hashlib.sha256(path.read_bytes()).hexdigest() for k,path in paths.items()}
     require(all(args.output_dir.resolve() != path.resolve().parent for path in paths.values()), "Keep derived inputs in a separate directory")
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    write(args.output_dir/"answers.csv", a, list(a[0]))
-    write(args.output_dir/"probes_mcq.csv", p, ("probe_id", "case_id", "probe_kind", "correct_letter", "image_file", *FIELDS))
-    write(args.output_dir/"seq_to_probe.csv", m, ("seq", "probe_id", "image", "reference_image_file"))
-    write(args.output_dir/"manifest.csv", c, ("case_id", "risk_tier"))
-    (args.output_dir/"preparation_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    with new_output_directory(args.output_dir) as output:
+        write(output/"answers.csv", a, list(a[0]))
+        write(output/"probes_mcq.csv", p, ("probe_id", "case_id", "probe_kind", "correct_letter", "image_file", *FIELDS))
+        write(output/"seq_to_probe.csv", m, ("seq", "probe_id", "image", "reference_image_file"))
+        write(output/"manifest.csv", c, ("case_id", "risk_tier"))
+        (output/"preparation_report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
 
 if __name__ == "__main__":

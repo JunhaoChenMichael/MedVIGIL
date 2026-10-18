@@ -22,11 +22,18 @@ SOFTWARE.
 
 ================================================================================
 
-Annotations and benchmark metadata under data/medvlm_bench_v1/ (manifest.csv,
-grounding.csv, probes_*.csv, triplets.csv, splits/, raw_llm/, mcq_raw/,
-qa_review/, validation_report.md, README.md, DATASHEET.md, PIPELINE.md,
-croissant.json) are released under Creative Commons Attribution 4.0
-International (CC-BY-4.0): https://creativecommons.org/licenses/by/4.0/
+MedVIGIL-authored annotations and benchmark metadata under data/medvigil_v1/
+(legacy path data/medvlm_bench_v1/), including manifest.csv, grounding.csv,
+probes_*.csv, triplets.csv, splits/, raw_llm/, mcq_raw/, qa_review/,
+validation_report.md, README.md, DATASHEET.md, PIPELINE.md and croissant.json,
+are released under Creative Commons Attribution 4.0 International
+(CC-BY-4.0): https://creativecommons.org/licenses/by/4.0/
+
+The same CC-BY-4.0 grant explicitly covers the MedVIGIL-authored R4 response
+letters, reading-key mappings, aggregate counts, validation metadata and scoring
+results in data/r4_public/ and data/clinician_baseline.csv. Third-party source
+questions, answers, options, captions and imagery retain their upstream terms;
+this grant does not relicense that source content.
 
 Source images (released separately on Hugging Face Datasets) retain their
 original upstream licenses: VQA-RAD (CC0), SLAKE (research-use), ROCO (MIT-

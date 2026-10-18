@@ -13,7 +13,9 @@ import csv
 import hashlib
 import itertools
 import json
+import tempfile
 from collections import Counter, defaultdict
+from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
 from fractions import Fraction
 from pathlib import Path
@@ -44,7 +46,38 @@ def exact_string(value):
 
 def read_csv(path):
     with Path(path).open(encoding="utf-8-sig", newline="") as handle:
-        return list(csv.DictReader(handle))
+        rows = list(csv.DictReader(handle))
+    reject_formula_cells(rows, str(path))
+    return rows
+
+def reject_formula_cells(rows, label):
+    for line, row in enumerate(rows, 2):
+        require(None not in row and all(isinstance(value, str) for value in row.values()), f"Malformed CSV row in {label}, line {line}")
+        for column, value in row.items():
+            require(not value.lstrip().startswith(("=", "+", "-", "@")), f"Formula-prefixed CSV cell in {label}, line {line}, column {column}; input is rejected without changing its text")
+
+@contextmanager
+def new_output_directory(output):
+    """Publish one complete report; existing destinations are never reused."""
+    output = Path(output)
+    message = "Output directory already exists; choose a new output path"
+    require(not output.exists() and not output.is_symlink(), message)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    lock = output.parent / f".{output.name}.lock"
+    try:
+        lock.mkdir()
+    except FileExistsError as exc:
+        raise ValueError("Output publication already in progress; choose a new output path") from exc
+    try:
+        require(not output.exists() and not output.is_symlink(), message)
+        with tempfile.TemporaryDirectory(prefix=f".{output.name}-", dir=output.parent) as temp:
+            staged = Path(temp) / "report"
+            staged.mkdir()
+            yield staged
+            require(not output.exists() and not output.is_symlink(), message)
+            staged.rename(output)
+    finally:
+        lock.rmdir()
 
 def signature(row):
     return tuple(row[key] for key in FIELDS)
@@ -65,9 +98,10 @@ def main():
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output-dir", "--out", dest="out", type=Path, required=True)
     parser.add_argument("--seq-map", type=Path)
-    parser.add_argument("--reference-scope", choices=("public", "full", "provided"), default="public", help="Label the reference population honestly; full requires complete external metadata")
+    parser.add_argument("--reference-scope", choices=("public", "full", "provided"), required=True, help="Explicitly label the reference population; full requires complete external metadata")
     parser.add_argument("--require-complete", action="store_true", help="Fail unless every answer has reference metadata and all probe identities are resolved")
     args = parser.parse_args()
+    require(not args.out.exists() and not args.out.is_symlink(), "Output directory already exists; choose a new output path")
     require(args.reference_scope != "full" or args.require_complete, "Full reference scope requires --require-complete")
     answers, probes, manifest_rows = map(read_csv, (args.answers, args.probes, args.manifest))
     require(bool(answers and probes and manifest_rows), "Empty input table")
@@ -165,15 +199,15 @@ def main():
         family_rows.append({"probe_kind": kind, "risk_tier": tier, "n": n, "n_correct_min": lower, "n_correct_max": upper, "accuracy_pct": float(exact) if exact is not None else "", "accuracy_pct_exact": exact_string(exact) or "", "accuracy_pct_1dp": one_decimal(exact) or "", "accuracy_lower_pct": float(pct_fraction(lower, n)), "accuracy_upper_pct": float(pct_fraction(upper, n)), "status": "identified" if lower == upper else "unidentified_image_assignment"})
 
     def metric(kind):
-        n, lower, upper = ranges[(kind, "ALL")]
-        exact = pct_fraction(lower, n) if lower == upper else None
-        return {"n": n, "n_correct": lower if lower == upper else None, "pct": float(exact) if exact is not None else None, "pct_exact": exact_string(exact), "pct_1dp": one_decimal(exact), "lower_pct": float(pct_fraction(lower, n)) if n else None, "upper_pct": float(pct_fraction(upper, n)) if n else None}
+        n, lower, upper = ranges.get((kind, "ALL"), (0, 0, 0))
+        exact = pct_fraction(lower, n) if n and lower == upper else None
+        return {"n": n, "n_correct": lower if n and lower == upper else None, "pct": float(exact) if exact is not None else None, "pct_exact": exact_string(exact), "pct_1dp": one_decimal(exact), "lower_pct": float(pct_fraction(lower, n)) if n else None, "upper_pct": float(pct_fraction(upper, n)) if n else None}
     traps = metric("halluc_trap")
     sfr_tier = {}
     for tier in TIERS:
-        n, lower, upper = ranges[("halluc_trap", tier)]
-        exact = pct_fraction(n-lower, n) if lower == upper else None
-        sfr_tier[tier] = {"n": n, "n_silent_failures": n-lower if lower == upper else None, "sfr_pct": float(exact) if exact is not None else None, "sfr_pct_exact": exact_string(exact), "sfr_pct_1dp": one_decimal(exact)}
+        n, lower, upper = ranges.get(("halluc_trap", tier), (0, 0, 0))
+        exact = pct_fraction(n-lower, n) if n and lower == upper else None
+        sfr_tier[tier] = {"n": n, "n_silent_failures": n-lower if n and lower == upper else None, "sfr_pct": float(exact) if exact is not None else None, "sfr_pct_exact": exact_string(exact), "sfr_pct_1dp": one_decimal(exact)}
     weighted_sfr = sum(WEIGHTS[t] * Fraction(sfr_tier[t]["sfr_pct_exact"]) for t in TIERS)/sum(WEIGHTS.values()) if all(sfr_tier[t]["sfr_pct"] is not None for t in TIERS) else None
     original, only, masked = metric("original"), metric("roi_only"), metric("roi_masked")
     vgr = Fraction(only["pct_exact"]) - Fraction(masked["pct_exact"]) if only["pct"] is not None and masked["pct"] is not None else None
@@ -192,11 +226,11 @@ def main():
     if args.seq_map:
         inputs["seq_map"] = sha256(args.seq_map)
     tier_composites = {}
+    required = ("original", "tcf", "negation", "specificity_drop", "roi_only", "roi_masked", "halluc_trap")
     for tier in TIERS:
-        required = ("original", "tcf", "negation", "specificity_drop", "roi_only", "roi_masked", "halluc_trap")
         tier_exact = {}
         for kind in required:
-            n, lower, upper = ranges[(kind, tier)]
+            n, lower, upper = ranges.get((kind, tier), (0, 0, 0))
             tier_exact[kind] = pct_fraction(lower, n) if n and lower == upper else None
         if identity_resolved and all(value is not None for value in tier_exact.values()):
             cap_t = sum(tier_exact[k] for k in ("original", "tcf", "negation", "specificity_drop"))/4
@@ -215,15 +249,17 @@ def main():
         limitations.append(f"{len(unmatched_rows)} rows lack matching reference gold/tier metadata; they are excluded, not assigned inferred gold labels.")
     if not identity_resolved:
         limitations.append("Renamed images without seq-to-probe mapping do not identify original, left-right-flip, ROI-only or ROI-masked probes. Null metrics are unavailable; assignment bounds are not estimates or confidence intervals.")
+    if any(not ranges.get((kind, tier), (0,))[0] for kind in required for tier in TIERS):
+        limitations.append("Some required probe families or risk tiers are absent from the provided reference; dependent rates and composites are null rather than inferred.")
     summary = {"scope": scope, "reference_scope": args.reference_scope, "rounding": "All calculations use exact fractions; one-decimal display uses ROUND_HALF_UP", "input_sha256": inputs, "n_answer_rows": len(answers), "seq_is_complete_1_to_n": sorted(int(a["seq"]) for a in answers) == list(range(1, len(answers)+1)), "data_origin_values": dict(Counter(a.get("data_origin", "not_supplied") for a in answers)), "answer_counts": dict(Counter(a["answer"] for a in answers)), "n_reference_probes": len(probes), "n_reference_cases": len(manifest), "n_public_probes": len(probes) if args.reference_scope == "public" else None, "n_public_cases": len(manifest) if args.reference_scope == "public" else None, "n_matched_answer_rows": len(map_rows), "n_unmatched_rows": len(unmatched_rows), "n_rows_with_ambiguous_text_mapping": ambiguous_rows if not seq_map else 0, "n_individually_identified_rows": len(exact_probe_rows), "n_exact_signature_groups": len(p_groups), "multiplicities_equal": True, "identity_resolved": identity_resolved, "metrics": metrics, "limitations": limitations}
-    args.out.mkdir(parents=True, exist_ok=True)
-    (args.out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
-    write_csv(args.out / "public_alignment.csv", sorted(map_rows, key=lambda r: int(r["seq"])), ("seq", "image", "answer", "candidate_probe_ids", "candidate_kinds", "candidate_gold", "mapping_status"))
-    write_csv(args.out / "unmatched_seq.csv", sorted(unmatched_rows, key=lambda r: int(r["seq"])), ("seq", "image"))
-    write_csv(args.out / "public_family_tier.csv", family_rows, ("probe_kind", "risk_tier", "n", "n_correct_min", "n_correct_max", "accuracy_pct", "accuracy_pct_exact", "accuracy_pct_1dp", "accuracy_lower_pct", "accuracy_upper_pct", "status"))
-    write_csv(args.out / "supported_public_family_tier.csv", [row for row in family_rows if row["status"] == "identified"], ("probe_kind", "risk_tier", "n", "n_correct_min", "n_correct_max", "accuracy_pct", "accuracy_pct_exact", "accuracy_pct_1dp", "accuracy_lower_pct", "accuracy_upper_pct", "status"))
-    (args.out / "supported_public_tier.json").write_text(json.dumps({"scope": summary["scope"], "input_sha256": inputs, "metrics": metrics, "identified_family_tier": [row for row in family_rows if row["status"] == "identified"]}, ensure_ascii=False, indent=2), encoding="utf-8")
-    write_csv(args.out / "identified_public_probes.csv", sorted(exact_probe_rows, key=lambda r: int(r["seq"])), ("seq", "probe_id", "case_id", "probe_kind", "risk_tier", "answer", "gold", "correct"))
+    with new_output_directory(args.out) as output:
+        (output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_csv(output / "public_alignment.csv", sorted(map_rows, key=lambda r: int(r["seq"])), ("seq", "image", "answer", "candidate_probe_ids", "candidate_kinds", "candidate_gold", "mapping_status"))
+        write_csv(output / "unmatched_seq.csv", sorted(unmatched_rows, key=lambda r: int(r["seq"])), ("seq", "image"))
+        write_csv(output / "public_family_tier.csv", family_rows, ("probe_kind", "risk_tier", "n", "n_correct_min", "n_correct_max", "accuracy_pct", "accuracy_pct_exact", "accuracy_pct_1dp", "accuracy_lower_pct", "accuracy_upper_pct", "status"))
+        write_csv(output / "supported_public_family_tier.csv", [row for row in family_rows if row["status"] == "identified"], ("probe_kind", "risk_tier", "n", "n_correct_min", "n_correct_max", "accuracy_pct", "accuracy_pct_exact", "accuracy_pct_1dp", "accuracy_lower_pct", "accuracy_upper_pct", "status"))
+        (output / "supported_public_tier.json").write_text(json.dumps({"scope": summary["scope"], "input_sha256": inputs, "metrics": metrics, "identified_family_tier": [row for row in family_rows if row["status"] == "identified"]}, ensure_ascii=False, indent=2), encoding="utf-8")
+        write_csv(output / "identified_public_probes.csv", sorted(exact_probe_rows, key=lambda r: int(r["seq"])), ("seq", "probe_id", "case_id", "probe_kind", "risk_tier", "answer", "gold", "correct"))
     print(json.dumps({k:v for k,v in summary.items() if k not in ("input_sha256", "limitations")}, ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":

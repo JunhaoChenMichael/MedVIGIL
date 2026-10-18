@@ -18,6 +18,10 @@ Expected public result: 1,837/2,002 correct; Original 229/240; trap SFR 30/480;
 SFR_w 9.6%; MCS 82.7. Original seq values are preserved and therefore have gaps.
 There are no unmatched or ambiguous rows.
 
+Always select the reference scope explicitly and use a new output-directory
+name for each run. Reports are published only as a complete validated set;
+existing result directories are not overwritten.
+
 The pinned independent public reference is:
 https://huggingface.co/datasets/jhq0709/MedVIGIL/tree/5373ecdc8e20c467f1933b314b3a3164d2cba6d5
 
@@ -94,5 +98,8 @@ python -m unittest discover -s analysis -p "test_*r4*.py" -v
 
 LICENSE
 
-The repository LICENSE is authoritative. Upstream rights and access
-restrictions continue to apply.
+The canonical evaluation-repository LICENSE is authoritative:
+https://github.com/hq0709/MedVIGIL/blob/main/LICENSE
+It explicitly covers the new R4 response, mapping and aggregate paths under
+the existing CC BY 4.0 terms. Upstream rights and access restrictions continue
+to apply.

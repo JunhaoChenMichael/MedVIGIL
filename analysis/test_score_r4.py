@@ -48,8 +48,18 @@ class ScorerContractTest(unittest.TestCase):
         save(self.root/"manifest.csv", self.manifest, ["case_id", "risk_tier"])
         save(self.root/"mapping.csv", self.mapping, ["seq", "probe_id"])
 
-    def run_cli(self, *extra):
-        return subprocess.run([sys.executable, str(SCORER), "--answers", str(self.root/"answers.csv"), "--probes", str(self.root/"probes.csv"), "--manifest", str(self.root/"manifest.csv"), "--output-dir", str(self.root/"out"), *extra], capture_output=True, text=True)
+    def cli_args(self, *extra, scope="provided"):
+        scope_args = ["--reference-scope", scope] if scope is not None and "--reference-scope" not in extra else []
+        return [sys.executable, str(SCORER), "--answers", str(self.root/"answers.csv"), "--probes", str(self.root/"probes.csv"), "--manifest", str(self.root/"manifest.csv"), "--output-dir", str(self.root/"out"), *scope_args, *extra]
+
+    def run_cli(self, *extra, scope="provided"):
+        return subprocess.run(self.cli_args(*extra, scope=scope), capture_output=True, text=True)
+
+    def test_reference_scope_is_mandatory(self):
+        run = self.run_cli(scope=None)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("--reference-scope", run.stderr)
+        self.assertFalse((self.root/"out").exists())
 
     def test_ambiguous_image_identity_does_not_produce_mcs(self):
         run = self.run_cli()
@@ -120,6 +130,87 @@ class ScorerContractTest(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         self.assertEqual(module.one_decimal(module.Fraction(25, 4)), "6.3")
+
+    def test_missing_family_is_unavailable_not_zero(self):
+        removed = {p["probe_id"] for p in self.probes if p["probe_kind"] == "roi_only"}
+        removed_seqs = {m["seq"] for m in self.mapping if m["probe_id"] in removed}
+        self.probes = [p for p in self.probes if p["probe_id"] not in removed]
+        self.mapping = [m for m in self.mapping if m["probe_id"] not in removed]
+        self.answers = [a for a in self.answers if a["seq"] not in removed_seqs]
+        self.persist()
+        run = self.run_cli("--seq-map", str(self.root/"mapping.csv"), "--require-complete")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        summary = json.loads((self.root/"out/summary.json").read_text())
+        self.assertEqual(summary["metrics"]["ROI_only"]["n"], 0)
+        self.assertIsNone(summary["metrics"]["ROI_only"]["n_correct"])
+        self.assertIsNone(summary["metrics"]["ROI_only"]["pct"])
+        self.assertIsNone(summary["metrics"]["MCS"])
+        self.assertTrue(any("absent" in message for message in summary["limitations"]))
+
+    def test_missing_tier_is_unavailable_not_zero(self):
+        removed = {p["probe_id"] for p in self.probes if p["case_id"] == "SYNTHETIC-5"}
+        removed_seqs = {m["seq"] for m in self.mapping if m["probe_id"] in removed}
+        self.probes = [p for p in self.probes if p["probe_id"] not in removed]
+        self.mapping = [m for m in self.mapping if m["probe_id"] not in removed]
+        self.answers = [a for a in self.answers if a["seq"] not in removed_seqs]
+        self.manifest = [m for m in self.manifest if m["risk_tier"] != "L5"]
+        self.persist()
+        run = self.run_cli("--seq-map", str(self.root/"mapping.csv"), "--require-complete")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        metrics = json.loads((self.root/"out/summary.json").read_text())["metrics"]
+        self.assertIsNone(metrics["SFR_by_tier"]["L5"]["n_silent_failures"])
+        self.assertIsNone(metrics["SFR_w_pct"])
+        self.assertIsNone(metrics["composites_by_tier"]["L5"])
+        self.assertIsNone(metrics["MCS"])
+
+    def test_formula_prefixed_exported_image_is_rejected(self):
+        self.answers[0]["image"] = ' \t=HYPERLINK("https://example.invalid")'
+        self.persist()
+        run = self.run_cli()
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("Formula-prefixed CSV cell", run.stderr)
+        self.assertFalse((self.root/"out").exists())
+
+    def test_successful_report_cannot_be_reused(self):
+        first = self.run_cli("--seq-map", str(self.root/"mapping.csv"))
+        self.assertEqual(first.returncode, 0, first.stderr)
+        before = {f.name: f.read_bytes() for f in (self.root/"out").iterdir()}
+        second = self.run_cli("--require-complete")
+        self.assertNotEqual(second.returncode, 0)
+        self.assertIn("Output directory already exists", second.stderr)
+        self.assertEqual(before, {f.name: f.read_bytes() for f in (self.root/"out").iterdir()})
+
+    def test_existing_output_directory_is_rejected(self):
+        (self.root/"out").mkdir()
+        (self.root/"out/old.txt").write_text("old report")
+        run = self.run_cli()
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn("Output directory already exists", run.stderr)
+        self.assertEqual([f.name for f in (self.root/"out").iterdir()], ["old.txt"])
+
+    def test_failed_publication_leaves_no_partial_report(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("r4_scorer", SCORER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with self.assertRaisesRegex(OSError, "simulated write failure"):
+            with module.new_output_directory(self.root/"out") as staged:
+                (staged/"partial.txt").write_text("partial")
+                raise OSError("simulated write failure")
+        self.assertFalse((self.root/"out").exists())
+        self.assertEqual(list(self.root.glob(".out*")), [])
+
+    def test_concurrent_report_writers_do_not_mix_outputs(self):
+        command = self.cli_args("--seq-map", str(self.root/"mapping.csv"))
+        first = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        second = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        first.communicate(timeout=30)
+        second.communicate(timeout=30)
+        self.assertEqual(sorted([first.returncode, second.returncode]), [0, 1])
+        summary = json.loads((self.root/"out/summary.json").read_text())
+        self.assertEqual(summary["metrics"]["MCS_exact"], "90/1")
+        self.assertEqual(len(list((self.root/"out").iterdir())), 7)
+        self.assertEqual(list(self.root.glob(".out*")), [])
 
 if __name__ == "__main__":
     unittest.main()
